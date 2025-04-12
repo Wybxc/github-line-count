@@ -33,6 +33,7 @@ export default defineConfig({
     new UserscriptPlugin({
       headers: {
         name: "GitHub Line Count",
+        namespace: "https://github.com/Wybxc/github-line-count",
         description: "Count lines of code in GitHub repositories",
         version: "1.0.0",
         author: "Wybxc",
@@ -46,11 +47,11 @@ export default defineConfig({
           "GM_xmlHttpRequest",
         ],
         match: ["*://github.com/*"],
-        connect: ["*://api.github.com/*"],
+        connect: ["api.github.com"],
         require: [
           "https://unpkg.com/badgen@3.2.3",
           "https://unpkg.com/human-format@1.2.1",
-          "https://cdn.jsdelivr.net/npm/@trim21/gm-fetch",
+          "https://unpkg.com/@trim21/gm-fetch@0.3.0/dist/gm_fetch.js",
         ],
       },
       pretty: true,
