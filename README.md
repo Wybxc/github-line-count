@@ -31,6 +31,11 @@ Note:
 - Results may vary slightly from exact counts
 - Very large repositories may not be supported
 
+## Roadmap
+
+- [ ] Add support for linguistic detection (i.e., ignore vendored or generated code)
+- [ ] Add support for mobile device views
+
 ## Credits
 
 - [gloc](https://github.com/kas-elvirov/gloc): The inspiration for this script
