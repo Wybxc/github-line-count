@@ -35,7 +35,7 @@ export default defineConfig({
         name: "GitHub Line Count",
         namespace: "https://github.com/Wybxc/github-line-count",
         description: "Count lines of code in GitHub repositories",
-        version: "1.0.1",
+        version: "1.1.0",
         author: "Wybxc",
         homepage: "https://github.com/Wybxc/github-line-count",
         license: "GPL-2.0-or-later",

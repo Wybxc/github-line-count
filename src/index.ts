@@ -113,21 +113,22 @@ async function queryLineCount(
   const queries = treePaths
     .map(
       (path, i) => `file${i}: object(expression: "HEAD:${path}") {
-                        ... on Tree {
-                            entries {
-                                lineCount
-                            }
+                      ... on Tree {
+                        entries {
+                          isGenerated
+                          lineCount
                         }
+                      }
                     }`,
     )
     .join("\n");
 
   const response = (await octokit.graphql(
     `query ($owner: String!, $repo: String!) {
-            repository(owner: $owner, name: $repo) {
-                ${queries}
-            }
-        }`,
+        repository(owner: $owner, name: $repo) {
+          ${queries}
+        }
+      }`,
     {
       owner,
       repo,
@@ -136,6 +137,7 @@ async function queryLineCount(
     repository: {
       [key: string]: {
         entries: Array<{
+          isGenerated: boolean;
           lineCount: number;
         }>;
       };
@@ -144,6 +146,7 @@ async function queryLineCount(
 
   return Object.values(response.repository)
     .flatMap(({ entries }) => entries)
+    .filter((entry) => !entry.isGenerated)
     .reduce((acc, entry) => acc + entry.lineCount, 0);
 }
 
