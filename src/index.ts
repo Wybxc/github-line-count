@@ -7,7 +7,7 @@ import humanFormat from "human-format";
 const gh_pat = GM_getValue("gh_pat", "");
 
 GM_registerMenuCommand(
-  gh_pat ? "Set GitHub PAT (already set)" : "Set GitHub PAT",
+  gh_pat ? "Set GitHub PAT (already set ✅)" : "Set GitHub PAT",
   async () => {
     const pat = prompt(
       "To avoid 429 errors, it's recommended to set a GitHub Personal Access Token (PAT) with the access to public repositories. It will also enable stats for private repositories if you provide the necessary permissions.\nEnter your GitHub Personal Access Token (PAT):",
@@ -60,14 +60,78 @@ async function getCodeFrequencyStats(owner: string, repo: string) {
     }
 
     // The response may be 202, in which case we need to wait and retry
-    renderBadge({
-      label: "Lines",
-      status: "Loading...",
-      color: "blue",
-      icon: githubIcon,
-    });
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
+}
+
+async function getFileTreeList(owner: string, repo: string, branch: string) {
+  const gh_pat = GM_getValue("gh_pat", "");
+  const octokit = new Octokit({
+    auth: gh_pat || undefined,
+    request: {
+      fetch: GM_fetch,
+    },
+  });
+
+  const response = await octokit.rest.git.getTree({
+    owner,
+    repo,
+    tree_sha: branch,
+    recursive: "1",
+  });
+  return response.data.tree.filter(
+    (file: { type: string }) => file.type === "tree",
+  );
+}
+
+async function queryLineCount(
+  owner: string,
+  repo: string,
+  treePaths: string[],
+) {
+  const gh_pat = GM_getValue("gh_pat", "");
+  const octokit = new Octokit({
+    auth: gh_pat || undefined,
+    request: {
+      fetch: GM_fetch,
+    },
+  });
+
+  const queries = treePaths
+    .map(
+      (path, i) => `file${i}: object(expression: "HEAD:${path}") {
+                        ... on Tree {
+                            entries {
+                                lineCount
+                            }
+                        }
+                    }`,
+    )
+    .join("\n");
+
+  const response = (await octokit.graphql(
+    `query ($owner: String!, $repo: String!) {
+            repository(owner: $owner, name: $repo) {
+                ${queries}
+            }
+        }`,
+    {
+      owner,
+      repo,
+    },
+  )) as {
+    repository: {
+      [key: string]: {
+        entries: Array<{
+          lineCount: number;
+        }>;
+      };
+    };
+  };
+
+  return Object.values(response.repository)
+    .flatMap(({ entries }) => entries)
+    .reduce((acc, entry) => acc + entry.lineCount, 0);
 }
 
 function getErrorMessage(error: unknown): string {
@@ -87,26 +151,55 @@ async function renderLoc() {
   const repository = document
     .querySelector(".AppHeader-context-full > nav > ul > li:nth-child(2) > a")
     ?.innerText.trim();
-  if (owner && repository) {
-    try {
-      const stats = await getCodeFrequencyStats(owner, repository);
-      const loc = stats.reduce(
-        (acc, [_, additions, deletions]) =>
-          acc + (additions ?? 0) + (deletions ?? 0),
-        0,
-      );
+  const branch = document
+    .querySelector("button#branch-picker-repos-header-ref-selector")
+    ?.innerText.trim();
 
+  if (owner && repository && branch) {
+    let loc = -1;
+
+    renderBadge({
+      label: "Lines",
+      status: "Loading...",
+      color: "gray",
+      icon: githubIcon,
+    });
+
+    try {
+      const tree = await getFileTreeList(owner, repository, branch);
+      loc = await queryLineCount(
+        owner,
+        repository,
+        tree.map((file) => file.path),
+      );
+    } catch (error) {
+      console.error(error);
+    }
+
+    if (loc < 0) {
+      try {
+        const stats = await getCodeFrequencyStats(owner, repository);
+        loc = stats.reduce(
+          (acc, [_, additions, deletions]) =>
+            acc + (additions ?? 0) + (deletions ?? 0),
+          0,
+        );
+      } catch (error) {
+        renderBadge({
+          label: "Error",
+          status: getErrorMessage(error),
+          color: "red",
+          icon: githubIcon,
+        });
+        console.error(error);
+      }
+    }
+
+    if (loc >= 0) {
       renderBadge({
         label: "Lines",
         status: humanFormat(loc),
         color: loc < 10000 ? "green" : loc < 100000 ? "orange" : "red",
-        icon: githubIcon,
-      });
-    } catch (error) {
-      renderBadge({
-        label: "Error",
-        status: getErrorMessage(error),
-        color: "red",
         icon: githubIcon,
       });
     }
