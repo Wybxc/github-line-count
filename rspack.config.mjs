@@ -35,13 +35,16 @@ export default defineConfig({
       headers: {
         name: "GitHub Line Count",
         description: "Count lines of code in GitHub repositories",
-        version: "0.0.1",
+        version: "1.0.0",
+        author: "Wybxc",
+        homepage: "https://github.com/Wybxc/github-line-count",
         license: "GPL-2.0-or-later",
         grant: [
           "GM_registerMenuCommand",
           "GM_getValue",
           "GM_setValue",
           "GM.xmlHttpRequest",
+          "GM_xmlHttpRequest",
         ],
         match: ["*://github.com/*"],
         connect: ["*://api.github.com/*"],
