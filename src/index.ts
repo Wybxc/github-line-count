@@ -152,6 +152,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 async function renderLoc() {
+  if (document.getElementById("github-line-count")) {
+    return;
+  }
+
   const owner = document
     .querySelector(".AppHeader-context-full > nav > ul > li:nth-child(1) > a")
     ?.innerText.trim();
@@ -162,55 +166,84 @@ async function renderLoc() {
     .querySelector("button#branch-picker-repos-header-ref-selector")
     ?.innerText.trim();
 
-  if (owner && repository && branch) {
-    let loc = -1;
+  if (!owner || !repository || !branch) {
+    return;
+  }
+
+  renderBadge({
+    label: "Lines",
+    status: "Loading...",
+    color: "gray",
+    icon: githubIcon,
+  });
+
+  // Check cache first
+  const repoKey = `${owner}/${repository}`;
+  const cachedLoc = GM_getValue(`${repoKey}/loc`, -1);
+  const lastUpdated = GM_getValue(`${repoKey}/lastUpdated`, 0) as number;
+  const oneHour = 60 * 60 * 1000;
+
+  if (Date.now() - lastUpdated < oneHour && cachedLoc >= 0) {
+    renderBadge({
+      label: "Lines",
+      status: humanFormat(cachedLoc),
+      color:
+        cachedLoc < 10000 ? "green" : cachedLoc < 100000 ? "orange" : "red",
+      icon: githubIcon,
+    });
+    return;
+  }
+
+  let loc = -1;
+
+  // Try to get line count from file tree first
+  try {
+    const tree = await getFileTreeList(owner, repository, branch);
+    loc = await queryLineCount(
+      owner,
+      repository,
+      tree.map((file) => file.path),
+    );
+  } catch (error) {
+    console.error("Error getting line count from file tree:", error);
+
+    // Fallback to code frequency stats
+    try {
+      const stats = await getCodeFrequencyStats(owner, repository);
+      loc = stats.reduce(
+        (acc, [_, additions, deletions]) =>
+          acc + (additions ?? 0) + (deletions ?? 0),
+        0,
+      );
+    } catch (fallbackError) {
+      renderBadge({
+        label: "Error",
+        status: getErrorMessage(fallbackError),
+        color: "red",
+        icon: githubIcon,
+      });
+      console.error("Error getting code frequency stats:", fallbackError);
+      return;
+    }
+  }
+
+  // Cache the result and display if we got a valid line count
+  if (loc >= 0) {
+    GM_setValue(`${repoKey}/loc`, loc);
+    GM_setValue(`${repoKey}/lastUpdated`, Date.now());
 
     renderBadge({
       label: "Lines",
-      status: "Loading...",
-      color: "gray",
+      status: humanFormat(loc),
+      color: loc < 10000 ? "green" : loc < 100000 ? "orange" : "red",
       icon: githubIcon,
     });
-
-    try {
-      const tree = await getFileTreeList(owner, repository, branch);
-      loc = await queryLineCount(
-        owner,
-        repository,
-        tree.map((file) => file.path),
-      );
-    } catch (error) {
-      console.error(error);
-    }
-
-    if (loc < 0) {
-      try {
-        const stats = await getCodeFrequencyStats(owner, repository);
-        loc = stats.reduce(
-          (acc, [_, additions, deletions]) =>
-            acc + (additions ?? 0) + (deletions ?? 0),
-          0,
-        );
-      } catch (error) {
-        renderBadge({
-          label: "Error",
-          status: getErrorMessage(error),
-          color: "red",
-          icon: githubIcon,
-        });
-        console.error(error);
-      }
-    }
-
-    if (loc >= 0) {
-      renderBadge({
-        label: "Lines",
-        status: humanFormat(loc),
-        color: loc < 10000 ? "green" : loc < 100000 ? "orange" : "red",
-        icon: githubIcon,
-      });
-    }
   }
 }
 
 await renderLoc();
+
+// Observe for navigation changes
+new MutationObserver(renderLoc).observe(document.body, {
+  childList: true,
+});
