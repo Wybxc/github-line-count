@@ -1,5 +1,4 @@
 import { defineConfig } from "@rspack/cli";
-import { rspack } from "@rspack/core";
 import { UserscriptPlugin } from "webpack-userscript";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -48,6 +47,11 @@ export default defineConfig({
         ],
         match: ["*://github.com/*"],
         connect: ["*://api.github.com/*"],
+        require: [
+          "https://unpkg.com/badgen@3.2.3",
+          "https://unpkg.com/human-format@1.2.1",
+          "https://cdn.jsdelivr.net/npm/@trim21/gm-fetch",
+        ],
       },
       pretty: true,
       strict: true,
@@ -65,6 +69,11 @@ export default defineConfig({
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "dist"),
+  },
+  externals: {
+    badgen: "badgen",
+    "human-format": "humanFormat",
+    "@trim21/gm-fetch": "GM_fetch",
   },
   optimization: {
     minimize: false,

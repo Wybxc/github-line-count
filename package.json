@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@octokit/core": "^6.1.5",
-    "@octokit/request-error": "^6.1.8",
     "@trim21/gm-fetch": "^0.3.0",
     "badgen": "^3.2.3",
     "human-format": "^1.2.1"
