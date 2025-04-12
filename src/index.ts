@@ -30,7 +30,7 @@ GM_registerMenuCommand(
 const githubIcon =
   "data:image/svg+xml;base64,PHN2ZyBmaWxsPSJ3aGl0ZXNtb2tlIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+R2l0SHViPC90aXRsZT48cGF0aCBkPSJNMTIgLjI5N2MtNi42MyAwLTEyIDUuMzczLTEyIDEyIDAgNS4zMDMgMy40MzggOS44IDguMjA1IDExLjM4NS42LjExMy44Mi0uMjU4LjgyLS41NzcgMC0uMjg1LS4wMS0xLjA0LS4wMTUtMi4wNC0zLjMzOC43MjQtNC4wNDItMS42MS00LjA0Mi0xLjYxQzQuNDIyIDE4LjA3IDMuNjMzIDE3LjcgMy42MzMgMTcuN2MtMS4wODctLjc0NC4wODQtLjcyOS4wODQtLjcyOSAxLjIwNS4wODQgMS44MzggMS4yMzYgMS44MzggMS4yMzYgMS4wNyAxLjgzNSAyLjgwOSAxLjMwNSAzLjQ5NS45OTguMTA4LS43NzYuNDE3LTEuMzA1Ljc2LTEuNjA1LTIuNjY1LS4zLTUuNDY2LTEuMzMyLTUuNDY2LTUuOTMgMC0xLjMxLjQ2NS0yLjM4IDEuMjM1LTMuMjItLjEzNS0uMzAzLS41NC0xLjUyMy4xMDUtMy4xNzYgMCAwIDEuMDA1LS4zMjIgMy4zIDEuMjMuOTYtLjI2NyAxLjk4LS4zOTkgMy0uNDA1IDEuMDIuMDA2IDIuMDQuMTM4IDMgLjQwNSAyLjI4LTEuNTUyIDMuMjg1LTEuMjMgMy4yODUtMS4yMy42NDUgMS42NTMuMjQgMi44NzMuMTIgMy4xNzYuNzY1Ljg0IDEuMjMgMS45MSAxLjIzIDMuMjIgMCA0LjYxLTIuODA1IDUuNjI1LTUuNDc1IDUuOTIuNDIuMzYuODEgMS4wOTYuODEgMi4yMiAwIDEuNjA2LS4wMTUgMi44OTYtLjAxNSAzLjI4NiAwIC4zMTUuMjEuNjkuODI1LjU3QzIwLjU2NSAyMi4wOTIgMjQgMTcuNTkyIDI0IDEyLjI5N2MwLTYuNjI3LTUuMzczLTEyLTEyLTEyIi8+PC9zdmc+";
 
-function renderBadge(options: BadgenOptions) {
+function renderBadge(options: BadgenOptions, title?: string) {
   const badge = badgen(options);
   document.getElementById("github-line-count")?.remove();
   document
@@ -39,6 +39,12 @@ function renderBadge(options: BadgenOptions) {
       "beforeend",
       `<li id="github-line-count" style="margin-left: 0.5em">${badge}</li>`,
     );
+  if (title) {
+    const el = document.querySelector("#github-line-count > svg > title");
+    if (el) {
+      el.textContent = title;
+    }
+  }
 }
 
 async function getCodeFrequencyStats(owner: string, repo: string) {
@@ -184,13 +190,16 @@ async function renderLoc() {
   const oneHour = 60 * 60 * 1000;
 
   if (Date.now() - lastUpdated < oneHour && cachedLoc >= 0) {
-    renderBadge({
-      label: "Lines",
-      status: humanFormat(cachedLoc),
-      color:
-        cachedLoc < 10000 ? "green" : cachedLoc < 100000 ? "orange" : "red",
-      icon: githubIcon,
-    });
+    renderBadge(
+      {
+        label: "Lines",
+        status: humanFormat(cachedLoc),
+        color:
+          cachedLoc < 10000 ? "green" : cachedLoc < 100000 ? "orange" : "red",
+        icon: githubIcon,
+      },
+      `Lines: ${cachedLoc}`,
+    );
     return;
   }
 
@@ -232,12 +241,15 @@ async function renderLoc() {
     GM_setValue(`${repoKey}/loc`, loc);
     GM_setValue(`${repoKey}/lastUpdated`, Date.now());
 
-    renderBadge({
-      label: "Lines",
-      status: humanFormat(loc),
-      color: loc < 10000 ? "green" : loc < 100000 ? "orange" : "red",
-      icon: githubIcon,
-    });
+    renderBadge(
+      {
+        label: "Lines",
+        status: humanFormat(loc),
+        color: loc < 10000 ? "green" : loc < 100000 ? "orange" : "red",
+        icon: githubIcon,
+      },
+      `Lines: ${loc}`,
+    );
   }
 }
 
