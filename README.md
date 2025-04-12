@@ -13,7 +13,7 @@ A browser script that adds a total line count badge to GitHub repositories.
 ## Installation
 
 1. Install a userscript manager like [Tampermonkey](https://www.tampermonkey.net/)
-2. Install the script
+2. [Install the script](https://update.greasyfork.org/scripts/532605/GitHub%20Line%20Count.user.js)
 3. (Optional) Open the menu of the userscript manager and configure a [GitHub Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) for higher rate limits:
    - Requires `public_repo` scope for public repositories
    - Requires `repo` scope for private repositories
