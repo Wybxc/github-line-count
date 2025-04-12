@@ -36,6 +36,7 @@ export default defineConfig({
         name: "GitHub Line Count",
         description: "Count lines of code in GitHub repositories",
         version: "0.0.1",
+        license: "GPL-2.0-or-later",
         grant: [
           "GM_registerMenuCommand",
           "GM_getValue",
