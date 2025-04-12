@@ -1,4 +1,5 @@
 import { defineConfig } from "@rspack/cli";
+import { rspack } from "@rspack/core";
 import { UserscriptPlugin } from "webpack-userscript";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,6 +61,9 @@ export default defineConfig({
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "dist"),
+  },
+  optimization: {
+    minimize: false,
   },
   devServer: {
     webSocketServer: false,

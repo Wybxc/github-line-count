@@ -1,5 +1,6 @@
 import GM_fetch from "@trim21/gm-fetch";
-import { Octokit, RequestError } from "octokit";
+import { Octokit } from "@octokit/core";
+import { RequestError } from "@octokit/request-error";
 import type {} from "typed-query-selector";
 import { badgen, type BadgenOptions } from "badgen";
 import humanFormat from "human-format";
@@ -50,10 +51,13 @@ async function getCodeFrequencyStats(owner: string, repo: string) {
   });
 
   while (true) {
-    const response = await octokit.rest.repos.getCodeFrequencyStats({
-      owner,
-      repo,
-    });
+    const response = await octokit.request(
+      "GET /repos/{owner}/{repo}/stats/code_frequency",
+      {
+        owner,
+        repo,
+      },
+    );
 
     if (response.status === 200) {
       return response.data;
@@ -73,12 +77,15 @@ async function getFileTreeList(owner: string, repo: string, branch: string) {
     },
   });
 
-  const response = await octokit.rest.git.getTree({
-    owner,
-    repo,
-    tree_sha: branch,
-    recursive: "1",
-  });
+  const response = await octokit.request(
+    "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+    {
+      owner,
+      repo,
+      tree_sha: branch,
+      recursive: "1",
+    },
+  );
   return response.data.tree.filter(
     (file: { type: string }) => file.type === "tree",
   );
